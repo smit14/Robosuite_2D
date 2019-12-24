@@ -111,10 +111,10 @@ class SawyerLift(SawyerEnv):
             self.placement_initializer = placement_initializer
         else:
             self.placement_initializer = UniformRandomSampler(
-                x_range=[-0.03, 0.03],
-                y_range=[-0.03, 0.03],
+                x_range=[0.00, 0.00],
+                y_range=[-0.08, 0.08],
                 ensure_object_boundary_in_range=False,
-                z_rotation=True,
+                z_rotation=False,
             )
 
         super().__init__(
@@ -155,7 +155,7 @@ class SawyerLift(SawyerEnv):
         # initialize objects of interest
         cube = BoxObject(
             size_min=[0.020, 0.020, 0.020],  # [0.015, 0.015, 0.015],
-            size_max=[0.022, 0.022, 0.022],  # [0.018, 0.018, 0.018])
+            size_max=[0.042, 0.022, 0.022],  # [0.018, 0.018, 0.018])
             rgba=[1, 0, 0, 1],
         )
         self.mujoco_objects = OrderedDict([("cube", cube)])
@@ -195,9 +195,12 @@ class SawyerLift(SawyerEnv):
         self.model.place_objects()
 
         # reset joint positions
-        init_pos = np.array([-0.5538, -0.8208, 0.4155, 1.8409, -0.4955, 0.6482, 1.9628])
-        init_pos += np.random.randn(init_pos.shape[0]) * 0.02
-        self.sim.data.qpos[self._ref_joint_pos_indexes] = np.array(init_pos)
+        # init_pos = np.array([-0.5538, -0.8208, 0.4155, 1.8409, -0.4955, 0.6482, 1.9628])
+        # init_pos += np.random.randn(init_pos.shape[0]) * 0.02
+        # self.sim.data.qpos[self._ref_joint_pos_indexes] = np.array(init_pos)
+
+        init_joint_position = [-0.59382754, -1.12190546, 0.48425191, 1.99674156, -0.2968217, 0.76457908, 1.82085369]
+        self.set_robot_joint_positions(init_joint_position)
 
     def reward(self, action=None):
         """
