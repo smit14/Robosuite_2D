@@ -10,7 +10,7 @@ from robosuite.models.robots import Sawyer
 from robosuite.models.tasks import TableTopTask, UniformRandomSampler
 
 
-class SawyerStack(SawyerEnv):
+class SawyerPlay(SawyerEnv):
     """
     This class corresponds to the stacking task for the Sawyer robot arm.
     """
@@ -111,10 +111,10 @@ class SawyerStack(SawyerEnv):
             self.placement_initializer = placement_initializer
         else:
             self.placement_initializer = UniformRandomSampler(
-                x_range=[0.00, 0.00],
-                y_range=[-0.08, 0.08],
+                x_range=[0.00, 0.00],           # original: [-0.08, 0.08]
+                y_range=[-0.3, 0.3],            # original: [-0.08, 0.08]
                 ensure_object_boundary_in_range=False,
-                z_rotation=False,
+                z_rotation=False,               # original: [True]
             )
 
         super().__init__(
@@ -172,6 +172,7 @@ class SawyerStack(SawyerEnv):
         self.mujoco_arena.set_origin([0.16 + self.table_full_size[0] / 2, 0, 0])
 
         # initialize objects of interest
+        # initializing N(=5) objects here
         cubeA = BoxObject(
             size_min=[0.02, 0.02, 0.02], size_max=[0.02, 0.02, 0.02], rgba=[1, 0, 0, 1]
         )
@@ -180,7 +181,22 @@ class SawyerStack(SawyerEnv):
             size_max=[0.025, 0.025, 0.025],
             rgba=[0, 1, 0, 1],
         )
-        self.mujoco_objects = OrderedDict([("cubeA", cubeA), ("cubeB", cubeB)])
+        cubeC = BoxObject(
+            size_min=[0.022, 0.022, 0.022],
+            size_max=[0.022, 0.022, 0.022],
+            rgba=[0, 0, 1, 1],
+        )
+        cubeD = BoxObject(
+            size_min=[0.015, 0.015, 0.015],
+            size_max=[0.015, 0.015, 0.015],
+            rgba=[0, 1, 1, 1],
+        )
+        cubeE= BoxObject(
+            size_min=[0.018, 0.018, 0.018],
+            size_max=[0.018, 0.018, 0.018],
+            rgba=[1, 1, 0, 1],
+        )
+        self.mujoco_objects = OrderedDict([("cubeA", cubeA), ("cubeB", cubeB), ("cubeC", cubeC), ("cubeD", cubeD), ("cubeE", cubeE)])
         self.n_objects = len(self.mujoco_objects)
 
         # task includes arena, robot, and objects of interest
@@ -201,6 +217,10 @@ class SawyerStack(SawyerEnv):
         super()._get_reference()
         self.cubeA_body_id = self.sim.model.body_name2id("cubeA")
         self.cubeB_body_id = self.sim.model.body_name2id("cubeB")
+        self.cubeC_body_id = self.sim.model.body_name2id("cubeC")
+        self.cubeD_body_id = self.sim.model.body_name2id("cubeD")
+        self.cubeE_body_id = self.sim.model.body_name2id("cubeE")
+
         self.l_finger_geom_ids = [
             self.sim.model.geom_name2id(x) for x in self.gripper.left_finger_geoms
         ]
@@ -361,11 +381,37 @@ class SawyerStack(SawyerEnv):
             di["cubeB_pos"] = cubeB_pos
             di["cubeB_quat"] = cubeB_quat
 
+            # position and rotation of the third cube
+            cubeC_pos = np.array(self.sim.data.body_xpos[self.cubeC_body_id])
+            cubeC_quat = convert_quat(
+                np.array(self.sim.data.body_xquat[self.cubeC_body_id]), to="xyzw"
+            )
+            di["cubeC_pos"] = cubeC_pos
+            di["cubeC_quat"] = cubeC_quat
+
+            # position and rotation of the second cube
+            cubeD_pos = np.array(self.sim.data.body_xpos[self.cubeD_body_id])
+            cubeD_quat = convert_quat(
+                np.array(self.sim.data.body_xquat[self.cubeD_body_id]), to="xyzw"
+            )
+            di["cubeD_pos"] = cubeD_pos
+            di["cubeD_quat"] = cubeD_quat
+
+            # position and rotation of the second cube
+            cubeE_pos = np.array(self.sim.data.body_xpos[self.cubeE_body_id])
+            cubeE_quat = convert_quat(
+                np.array(self.sim.data.body_xquat[self.cubeE_body_id]), to="xyzw"
+            )
+            di["cubeE_pos"] = cubeE_pos
+            di["cubeE_quat"] = cubeE_quat
+
             # relative positions between gripper and cubes
             gripper_site_pos = np.array(self.sim.data.site_xpos[self.eef_site_id])
             di["gripper_to_cubeA"] = gripper_site_pos - cubeA_pos
             di["gripper_to_cubeB"] = gripper_site_pos - cubeB_pos
-            di["cubeA_to_cubeB"] = cubeA_pos - cubeB_pos
+            di["gripper_to_cubeC"] = gripper_site_pos - cubeC_pos
+            di["gripper_to_cubeD"] = gripper_site_pos - cubeD_pos
+            di["gripper_to_cubeE"] = gripper_site_pos - cubeE_pos
 
             di["object-state"] = np.concatenate(
                 [
@@ -373,9 +419,17 @@ class SawyerStack(SawyerEnv):
                     cubeA_quat,
                     cubeB_pos,
                     cubeB_quat,
+                    cubeC_pos,
+                    cubeC_quat,
+                    cubeD_pos,
+                    cubeD_quat,
+                    cubeE_pos,
+                    cubeE_quat,
                     di["gripper_to_cubeA"],
                     di["gripper_to_cubeB"],
-                    di["cubeA_to_cubeB"],
+                    di["gripper_to_cubeC"],
+                    di["gripper_to_cubeD"],
+                    di["gripper_to_cubeE"],
                 ]
             )
 

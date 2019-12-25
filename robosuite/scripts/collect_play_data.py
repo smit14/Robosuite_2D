@@ -21,6 +21,60 @@ from robosuite.wrappers import IKWrapper
 from robosuite.wrappers import DataCollectionWrapper
 
 
+def cube_outside(cur_obs, lower_bound, upper_bound, cube_init_z_pos):
+	cubeA_pos_x = cur_obs["cubeA_pos"][0]
+	cubeB_pos_x = cur_obs["cubeB_pos"][0]
+	cubeC_pos_x = cur_obs["cubeC_pos"][0]
+	cubeD_pos_x = cur_obs["cubeD_pos"][0]
+	cubeE_pos_x = cur_obs["cubeE_pos"][0]
+
+	cubeA_pos_z = cur_obs["cubeA_pos"][2]
+	cubeB_pos_z = cur_obs["cubeB_pos"][2]
+	cubeC_pos_z = cur_obs["cubeC_pos"][2]
+	cubeD_pos_z = cur_obs["cubeD_pos"][2]
+	cubeE_pos_z = cur_obs["cubeE_pos"][2]
+
+	cube_list = []
+	if cubeA_pos_z==cube_init_z_pos and (cubeA_pos_x < lower_bound or cubeA_pos_x > upper_bound):
+		cube_list.append("cubeA")
+	if cubeB_pos_z==cube_init_z_pos and (cubeB_pos_x < lower_bound or cubeB_pos_x > upper_bound):
+		cube_list.append("cubeB")
+	if cubeC_pos_z==cube_init_z_pos and (cubeC_pos_x < lower_bound or cubeC_pos_x > upper_bound):
+		cube_list.append("cubeC")
+	if cubeD_pos_z==cube_init_z_pos and (cubeD_pos_x < lower_bound or cubeD_pos_x > upper_bound):
+		cube_list.append("cubeD")
+	if cubeE_pos_z==cube_init_z_pos and (cubeE_pos_x < lower_bound or cubeE_pos_x > upper_bound):
+		cube_list.append("cubeE")
+	return cube_list
+
+
+def cube_tilted(cur_obs, cube_init_z_pos):
+	cubeA_rot = cur_obs["cubeA_quat"]
+	cubeB_rot = cur_obs["cubeB_quat"]
+	cubeC_rot = cur_obs["cubeC_quat"]
+	cubeD_rot = cur_obs["cubeD_quat"]
+	cubeE_rot = cur_obs["cubeE_quat"]
+
+	cubeA_pos_z = cur_obs["cubeA_pos"][2]
+	cubeB_pos_z = cur_obs["cubeB_pos"][2]
+	cubeC_pos_z = cur_obs["cubeC_pos"][2]
+	cubeD_pos_z = cur_obs["cubeD_pos"][2]
+	cubeE_pos_z = cur_obs["cubeE_pos"][2]
+
+	ideal_rot = np.array([0,0,0,1.0])
+
+	cube_list = []
+	if(np.sum(cubeA_rot-ideal_rot)>0 and cubeA_pos_z==cube_init_z_pos):
+		cube_list.append("cubeA")
+	if(np.sum(cubeB_rot-ideal_rot)>0 and cubeB_pos_z==cube_init_z_pos):
+		cube_list.append("cubeB")
+	if (np.sum(cubeC_rot - ideal_rot) > 0 and cubeC_pos_z==cube_init_z_pos):
+		cube_list.append("cubeC")
+	if (np.sum(cubeD_rot - ideal_rot) > 0 and cubeD_pos_z==cube_init_z_pos):
+		cube_list.append("cubeD")
+	if (np.sum(cubeE_rot - ideal_rot) > 0 and cubeE_pos_z==cube_init_z_pos):
+		cube_list.append("cubeE")
+	return cube_list
 
 def collect_human_trajectory(env, device):
 	"""
@@ -35,8 +89,11 @@ def collect_human_trajectory(env, device):
 
 	obs = env.reset()
 
-	# rotate the gripper so we can see it easily
+	# Arm initial position
+	# for x-y-z axis
 	# init_join_position = [0, -1.18, 0.00, 2.18, 0.00, 0.57, 1.5708]
+
+	# for y-z axis
 	init_joint_position = [-0.59382754, -1.12190546,  0.48425191,  1.99674156, -0.2968217,   0.76457908,  1.82085369]
 	env.set_robot_joint_positions(init_joint_position)
 
@@ -45,47 +102,55 @@ def collect_human_trajectory(env, device):
 
 	is_first = True
 
-	# episode terminates on a spacenav reset input or if task is completed
+	# never terminate episode
 	reset = False
-	task_completion_hold_count = -1 # cournter to collect 10 timesteps after reaching goal
 	device.start_control()
 
-	# previous xpos
-	prev = None
+	# initial z position of cubes
+	cube_init_z_pos = obs["cubeA_pos"][2]
+
+	#lower and upper bound on x-axis for cube position
+	lower_bound_x = 0.545
+	upper_bound_x = 0.575
+
+	# cool down after changing dpos[0]
+	cool_down_period = 10
+	cool_down_counter = 0
 
 	while not reset:
 		state = device.get_controller_state()
 
-		# convert first dimension to zero so that it always moves in 2D
-		# state["dpos"][0] = 0
+		ideal_arm_rotation = np.array([[-1, 0, 0], [0, 1, 0], [0, 0, -1]])
+		cur_arm_pos = env._right_hand_pos
+		cur_arm_pos_x = cur_arm_pos[0]
 
-		# ideal cube position : [0.56, 0.06170316, 0.82078722]
-		# if object goes out of the y axis and it is touched to plane then move that object to its original place
-		data_dict = env.unwrapped._get_observation()
-		cubeA_position = data_dict["cubeA_pos"]
-		cubeB_position = data_dict["cubeB_pos"]
+		if cool_down_counter>0:
+			cool_down_counter-=1
 
-		if cubeA_position[0]<0.50 or cubeA_position[0]>0.60 or cubeB_position[0]<0.50 or cubeB_position[0]>0.60:
-			init_joint_position = [-0.59382754, -1.12190546, 0.48425191, 1.99674156, -0.2968217, 0.76457908, 1.82085369]
-			env.set_robot_joint_positions(init_joint_position)
+		# convert first dimension(x-axis) to appropriate values (if arm is too far from plane then apply reverse dpos action)
+		if cur_arm_pos_x<0.545 and cool_down_counter==0:
+			state["dpos"][0] = 0.01
+			cool_down_counter = 10
+		elif cur_arm_pos_x>0.575 and cool_down_counter==0:
+			state["dpos"][0] = -0.01
+			cool_down_counter = 10
+		else:
+			state["dpos"][0] = 0
 
-			env.viewer.set_camera(camera_id=0)
-			env.render()
+		# disable the rotation of the end effector
+		state["rotation"] = ideal_arm_rotation
 
-			is_first = True
+		# ideal cube position : [0.56, yy, zz]
 
-			# episode terminates on a spacenav reset input or if task is completed
-			reset = False
-			task_completion_hold_count = -1  # cournter to collect 10 timesteps after reaching goal
-			device.start_control()
-
+		# check if any cubes are out of the plane
+		cur_obs = env.unwrapped._get_observation()
+		if np.sum(state["dpos"][1:]!=0)>0:
+			print(cur_obs["cubeA_quat"])
+		outside_cube_name = cube_outside(cur_obs, lower_bound_x, upper_bound_x, cube_init_z_pos)
+		tilted_cube_name = cube_tilted(cur_obs)
 		# print only if change in position
 		if(np.sum(state["dpos"]!=0)>0):
-			# env.unwrapped._reset_internal()
-			data_dict = env.unwrapped._get_observation()
-			print(data_dict["cubeA_pos"])
-			print(data_dict["cubeB_pos"])
-			print("\n")
+			print(outside_cube_name, tilted_cube_name)
 
 		dpos, rotation, grasp, reset = (
 			state["dpos"],
@@ -122,19 +187,6 @@ def collect_human_trajectory(env, device):
 
 
 		env.render()
-
-		if task_completion_hold_count == 0:
-			break
-
-		# state machine to check for having a success for 10 consecutive timesteps
-		if env._check_success():
-			if task_completion_hold_count > 0:
-				task_completion_hold_count -= 1 # latched state, decrement count
-			else:
-				task_completion_hold_count = 10 # reset count on first success timestep
-		else:
-			task_completion_hold_count = -1 # null the counter if there's no success
-
 	# cleanup for end of data collection episodes
 	env.close()
 
@@ -315,6 +367,5 @@ if __name__ == "__main__":
 	os.makedirs(new_dir)
 
 	# collect demonstrations
-	while True:
-		collect_human_trajectory(env, device)
-		gather_demonstrations_as_hdf5(tmp_directory, new_dir)
+	collect_human_trajectory(env, device)
+	gather_demonstrations_as_hdf5(tmp_directory, new_dir)
