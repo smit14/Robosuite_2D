@@ -289,6 +289,8 @@ class MujocoGeneratedObject(MujocoObject):
             if name is not None:
                 template["name"] = name
             main_body.append(ET.Element("site", attrib=template))
+
+        # print(main_body)
         return main_body
 
     def _get_visual(self, name=None, site=False, ob_type="box"):

@@ -5,7 +5,7 @@ from robosuite.utils.transform_utils import convert_quat
 from robosuite.environments.sawyer import SawyerEnv
 
 from robosuite.models.arenas.table_arena import TableArena
-from robosuite.models.objects import BoxObject
+from robosuite.models.objects import BoxObject, WallObject
 from robosuite.models.robots import Sawyer
 from robosuite.models.tasks import TableTopTask, UniformRandomSampler
 
@@ -115,6 +115,7 @@ class SawyerPlay(SawyerEnv):
                 y_range=[-0.3, 0.3],            # original: [-0.08, 0.08]
                 ensure_object_boundary_in_range=False,
                 z_rotation=False,               # original: [True]
+                n_actual_objects=5              # number of cubes/boxes in the plane
             )
 
         super().__init__(
@@ -196,7 +197,20 @@ class SawyerPlay(SawyerEnv):
             size_max=[0.018, 0.018, 0.018],
             rgba=[1, 1, 0, 1],
         )
-        self.mujoco_objects = OrderedDict([("cubeA", cubeA), ("cubeB", cubeB), ("cubeC", cubeC), ("cubeD", cubeD), ("cubeE", cubeE)])
+        wall1 = WallObject(
+            size_min=[0.01, 0.4, 0.15],
+            size_max=[0.01, 0.4, 0.15],
+            rgba=[1, 1, 0, 1],
+            density=10000,
+        )
+        wall2 = WallObject(
+            size_min=[0.01, 0.4, 0.15],
+            size_max=[0.01, 0.4, 0.15],
+            rgba=[1, 1, 0, 1],
+            density=10000,
+        )
+
+        self.mujoco_objects = OrderedDict([("cubeA", cubeA), ("cubeB", cubeB), ("cubeC", cubeC), ("cubeD", cubeD), ("cubeE", cubeE), ("wall1", wall1), ("wall2", wall2)])
         self.n_objects = len(self.mujoco_objects)
 
         # task includes arena, robot, and objects of interest

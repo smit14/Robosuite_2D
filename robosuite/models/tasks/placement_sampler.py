@@ -42,6 +42,7 @@ class UniformRandomSampler(ObjectPositionSampler):
         y_range=None,
         ensure_object_boundary_in_range=True,
         z_rotation="random",
+        n_actual_objects = 10
     ):
         """
         Args:
@@ -64,6 +65,7 @@ class UniformRandomSampler(ObjectPositionSampler):
         self.y_range = y_range
         self.ensure_object_boundary_in_range = ensure_object_boundary_in_range
         self.z_rotation = z_rotation
+        self.n_actual_objects = n_actual_objects
 
     def sample_x(self, object_horizontal_radius):
         x_range = self.x_range
@@ -105,6 +107,8 @@ class UniformRandomSampler(ObjectPositionSampler):
         placed_objects = []
         index = 0
         for obj_mjcf in self.mujoco_objects:
+            if index>=self.n_actual_objects:
+                continue
             horizontal_radius = obj_mjcf.get_horizontal_radius()
             bottom_offset = obj_mjcf.get_bottom_offset()
             success = False

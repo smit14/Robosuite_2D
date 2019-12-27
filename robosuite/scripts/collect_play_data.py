@@ -88,6 +88,7 @@ def collect_human_trajectory(env, device):
 	"""
 
 	obs = env.reset()
+	camera_id = 0
 
 	# Arm initial position
 	# for x-y-z axis
@@ -97,7 +98,7 @@ def collect_human_trajectory(env, device):
 	init_joint_position = [-0.59382754, -1.12190546,  0.48425191,  1.99674156, -0.2968217,   0.76457908,  1.82085369]
 	env.set_robot_joint_positions(init_joint_position)
 
-	env.viewer.set_camera(camera_id=0)
+	env.viewer.set_camera(camera_id=camera_id)
 	env.render()
 
 	is_first = True
@@ -128,10 +129,10 @@ def collect_human_trajectory(env, device):
 			cool_down_counter-=1
 
 		# convert first dimension(x-axis) to appropriate values (if arm is too far from plane then apply reverse dpos action)
-		if cur_arm_pos_x<0.545 and cool_down_counter==0:
+		if cur_arm_pos_x<lower_bound_x and cool_down_counter==0:
 			state["dpos"][0] = 0.01
 			cool_down_counter = 10
-		elif cur_arm_pos_x>0.575 and cool_down_counter==0:
+		elif cur_arm_pos_x>upper_bound_x and cool_down_counter==0:
 			state["dpos"][0] = -0.01
 			cool_down_counter = 10
 		else:
@@ -144,13 +145,12 @@ def collect_human_trajectory(env, device):
 
 		# check if any cubes are out of the plane
 		cur_obs = env.unwrapped._get_observation()
-		if np.sum(state["dpos"][1:]!=0)>0:
-			print(cur_obs["cubeA_quat"])
+
 		outside_cube_name = cube_outside(cur_obs, lower_bound_x, upper_bound_x, cube_init_z_pos)
-		tilted_cube_name = cube_tilted(cur_obs)
+		tilted_cube_name = cube_tilted(cur_obs,cube_init_z_pos)
 		# print only if change in position
-		if(np.sum(state["dpos"]!=0)>0):
-			print(outside_cube_name, tilted_cube_name)
+		# if(np.sum(state["dpos"]!=0)>0):
+
 
 		dpos, rotation, grasp, reset = (
 			state["dpos"],
@@ -159,6 +159,7 @@ def collect_human_trajectory(env, device):
 			state["reset"],
 		)
 
+		print(reset)
 		# convert into a suitable end effector action for the environment
 		current = env._right_hand_orn
 		drotation = current.T.dot(rotation)  # relative rotation of desired from current
@@ -183,8 +184,16 @@ def collect_human_trajectory(env, device):
 			env.sim.reset()
 			env.sim.set_state_from_flattened(initial_mjstate)
 			env.sim.forward()
-			env.viewer.set_camera(camera_id=0)
+			env.viewer.set_camera(camera_id=camera_id)
 
+			# set the conaffinity and contype of walls and objects
+			id2name_dict = env.unwrapped.sim.model._geom_id2name
+			for i in range(51):
+				if id2name_dict[i] is None or i >= 49:		# if its arm's body part or wall
+					env.unwrapped.sim.model.geom_conaffinity[i] = 1
+					env.unwrapped.sim.model.geom_contype[i] = 0
+
+			env.unwrapped.sim.model.geom_group[49:51] = 0	# turn the wall invisible
 
 		env.render()
 	# cleanup for end of data collection episodes
@@ -237,8 +246,12 @@ def gather_demonstrations_as_hdf5(directory, out_dir):
 	hdf5_path = os.path.join(out_dir, "demo.hdf5")
 	f = h5py.File(hdf5_path, "w")
 
-	# store some metadata in the attributes of one group
-	grp = f.create_group("data")
+	# store traj_per_file
+	traj_per_file = [1]
+	f.create_dataset("traj_per_file",data=np.array(traj_per_file))
+
+	# store trajectory info in traj0 folder/group
+	grp = f.create_group("traj0")
 
 	num_eps = 0
 	env_name = None  # will get populated at some point
@@ -281,8 +294,9 @@ def gather_demonstrations_as_hdf5(directory, out_dir):
 		del left_dquat[0]
 
 		num_eps += 1
-		ep_data_grp = grp.create_group("demo_{}".format(num_eps))
+		# ep_data_grp = grp.create_group("demo_{}".format(num_eps))
 
+		ep_data_grp = grp
 		# store model file name as an attribute
 		ep_data_grp.attrs["model_file"] = "model_{}.xml".format(num_eps)
 
