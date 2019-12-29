@@ -95,10 +95,10 @@ A manipulation `task` typically involves the participation of a `robot` with `gr
 
 ### Collecting Human Demonstrations
 
-We provide teleoperation utilities that allow users to control the robots with input devices, such as the keyboard and the [SpaceMouse](https://www.3dconnexion.com/spacemouse_compact/en/). Such functionality allows us to collect a dataset of human demonstrations for learning. We provide an example script to illustrate how to collect demonstrations. Our [collect_human_demonstrations](robosuite/scripts/collect_human_demonstrations.py) script takes the following arguments:
+We provide teleoperation utilities that allow users to control the robots with input devices, such as the keyboard and the [SpaceMouse](https://www.3dconnexion.com/spacemouse_compact/en/). Such functionality allows us to collect a dataset of human demonstrations for learning. We provide an example script to illustrate how to collect demonstrations. Our [collect_play_data](robosuite/scripts/collect_play_data.py) script takes the following arguments:
 
 - `directory:` path to a folder for where to store the pickle file of collected demonstrations
-- `environment:` name of the environment you would like to collect the demonstrations for
+- `environment:` name of the environment you would like to collect the demonstrations for ('SawyerPlay' for environment with 5 cubes)
 - `device:` either "keyboard" or "spacemouse"
 
 Our twin project [RoboTurk](http://roboturk.stanford.edu) has collected pilot datasets of more than a thousand demonstrations for two tasks in our Suite via crowdsourcing. You can find detailed information about the [RoboTurk datasets](docs/demonstrations.md#roboturk-dataset) and [demonstration collection](docs/demonstrations.md#collecting-your-own-demonstrations) here.

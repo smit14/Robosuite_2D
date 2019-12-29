@@ -65,7 +65,7 @@ def convert(b1, b2):
 class SpaceMouse(Device):
     """A minimalistic driver class for SpaceMouse with HID library."""
 
-    def __init__(self, vendor_id=9583, product_id=50735):
+    def __init__(self, vendor_id=9583, product_id=50741):
         """Initialize a SpaceMouse handler.
 
         Args:
@@ -79,7 +79,7 @@ class SpaceMouse(Device):
         """
 
         print("Opening SpaceMouse device")
-        self.device = hid.device()
+        self.device = hid.Device(vendor_id,product_id)
         self.device.open(vendor_id, product_id)  # SpaceMouse
 
         print("Manufacturer: %s" % self.device.get_manufacturer_string())
@@ -128,7 +128,7 @@ class SpaceMouse(Device):
 
     def start_control(self):
         """
-        Method that should be called externally before controller can
+        Method that should be calxled externally before controller can
         start receiving commands.
         """
         self._reset_internal_state()
