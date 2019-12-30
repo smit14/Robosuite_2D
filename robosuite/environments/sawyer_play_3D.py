@@ -10,7 +10,7 @@ from robosuite.models.robots import Sawyer
 from robosuite.models.tasks import TableTopTask, UniformRandomSampler
 
 
-class SawyerPlay(SawyerEnv):
+class SawyerPlay3D(SawyerEnv):
     """
     This class corresponds to the stacking task for the Sawyer robot arm.
     """
@@ -197,20 +197,20 @@ class SawyerPlay(SawyerEnv):
             size_max=[0.018, 0.018, 0.018],
             rgba=[1, 1, 0, 1],
         )
-        wall1 = WallObject(
-            size_min=[0.01, 0.4, 0.15],
-            size_max=[0.01, 0.4, 0.15],
-            rgba=[1, 1, 0, 1],
-            density=10000,
-        )
-        wall2 = WallObject(
-            size_min=[0.01, 0.4, 0.15],
-            size_max=[0.01, 0.4, 0.15],
-            rgba=[1, 1, 0, 1],
-            density=10000,
-        )
+        # wall1 = WallObject(
+        #     size_min=[0.01, 0.4, 0.15],
+        #     size_max=[0.01, 0.4, 0.15],
+        #     rgba=[1, 1, 0, 1],
+        #     density=10000,
+        # )
+        # wall2 = WallObject(
+        #     size_min=[0.01, 0.4, 0.15],
+        #     size_max=[0.01, 0.4, 0.15],
+        #     rgba=[1, 1, 0, 1],
+        #     density=10000,
+        # )
 
-        self.mujoco_objects = OrderedDict([("cubeA", cubeA), ("cubeB", cubeB), ("cubeC", cubeC), ("cubeD", cubeD), ("cubeE", cubeE), ("wall1", wall1), ("wall2", wall2)])
+        self.mujoco_objects = OrderedDict([("cubeA", cubeA), ("cubeB", cubeB), ("cubeC", cubeC), ("cubeD", cubeD), ("cubeE", cubeE)])
         self.n_objects = len(self.mujoco_objects)
 
         # task includes arena, robot, and objects of interest
