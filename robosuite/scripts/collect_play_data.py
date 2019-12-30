@@ -152,7 +152,6 @@ def collect_human_trajectory(env, device):
 		# print only if change in position
 		# if(np.sum(state["dpos"]!=0)>0):
 		# 	print(state["dpos"])
-		# 	print(state["grasp"])
 		# 	print()
 
 		dpos, rotation, grasp, reset = (
