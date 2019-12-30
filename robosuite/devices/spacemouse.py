@@ -215,6 +215,10 @@ class SpaceMouse(Device):
                     self.pitch = convert(d_2[3], d_2[4])
                     self.yaw = convert(d_2[5], d_2[6])
 
+                    # testing purpose
+                    self.roll = 0.0
+                    self.pitch = 0.0
+
                     self._control = [
                         self.x,
                         self.y,
