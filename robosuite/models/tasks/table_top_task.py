@@ -67,12 +67,12 @@ class TableTopTask(Task):
         pos_arr, quat_arr = self.initializer.sample()
 
         # position of 2 walls
-        # pos_arr.append([0.52, 0, 0.82])
-        # pos_arr.append([0.61, 0, 0.82])
-        #
-        # # rotation of 2 walls
-        # quat_arr.append([1, 0, 0, 0])
-        # quat_arr.append([1, 0, 0, 0])
+        pos_arr.append([0.52, 0, 0.82])
+        pos_arr.append([0.61, 0, 0.82])
+
+        # rotation of 2 walls
+        quat_arr.append([1, 0, 0, 0])
+        quat_arr.append([1, 0, 0, 0])
 
         for i in range(len(self.objects)):
             self.objects[i].set("pos", array_to_string(pos_arr[i]))
