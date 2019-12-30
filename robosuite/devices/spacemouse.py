@@ -158,17 +158,62 @@ class SpaceMouse(Device):
         t_last_click = -1
 
         while True:
-            d = self.device.read(13)
+
+            # d = self.device.read(13)
+            #
+            # if d is not None and self._enabled:
+            #
+            #     if d[0] == 1:  ## readings from 6-DoF sensor
+            #         self.y = convert(d[1], d[2])
+            #         self.x = convert(d[3], d[4])
+            #         self.z = convert(d[5], d[6]) * -1.0
+            #
+            #         self.roll = convert(d[7], d[8])
+            #         self.pitch = convert(d[9], d[10])
+            #         self.yaw = convert(d[11], d[12])
+            #
+            #         self._control = [
+            #             self.x,
+            #             self.y,
+            #             self.z,
+            #             self.roll,
+            #             self.pitch,
+            #             self.yaw,
+            #         ]
+            #
+            #     elif d[0] == 3:  ## readings from the side buttons
+            #
+            #         # press left button
+            #         if d[1] == 1:
+            #             t_click = time.time()
+            #             elapsed_time = t_click - t_last_click
+            #             t_last_click = t_click
+            #             self.single_click_and_hold = True
+            #
+            #         # release left button
+            #         if d[1] == 0:
+            #             self.single_click_and_hold = False
+            #
+            #         # right button is for reset
+            #         if d[1] == 2:
+            #             self._reset_state = 1
+            #             self._enabled = False
+            #             self._reset_internal_state()
+
+            d = self.device.read(8)
+
             if d is not None and self._enabled:
 
                 if d[0] == 1:  ## readings from 6-DoF sensor
-                    self.y = convert(d[1], d[2])
+
                     self.x = convert(d[3], d[4])
+                    self.y = convert(d[1], d[2])
                     self.z = convert(d[5], d[6]) * -1.0
 
-                    self.roll = convert(d[7], d[8])
-                    self.pitch = convert(d[9], d[10])
-                    self.yaw = convert(d[11], d[12])
+                    d_2 = self.device.read(8)  # Read orientation pkg
+                    self.roll = convert(d_2[1], d_2[2])
+                    self.pitch = convert(d_2[3], d_2[4])
+                    self.yaw = convert(d_2[5], d_2[6])
 
                     self._control = [
                         self.x,
