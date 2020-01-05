@@ -141,16 +141,10 @@ def collect_human_trajectory(env, device):
 		# disable the rotation of the end effector
 		state["rotation"] = ideal_arm_rotation
 
-		# ideal cube position : [0.56, yy, zz]
-
-		# check if any cubes are out of the plane
-		cur_obs = env.unwrapped._get_observation()
-
-		outside_cube_name = cube_outside(cur_obs, lower_bound_x, upper_bound_x, cube_init_z_pos)
-		tilted_cube_name = cube_tilted(cur_obs,cube_init_z_pos)
 		# print only if change in position
 		# if(np.sum(state["dpos"]!=0)>0):
-
+        # 	print(state["dpos"])
+        # 	print()
 
 		dpos, rotation, grasp, reset = (
 			state["dpos"],
