@@ -30,6 +30,7 @@ class DataCollectionWrapper(Wrapper):
         # in-memory cache for simulation states and action info
         self.states = []
         self.action_infos = []  # stores information about actions taken
+        self.eef_states = []
 
         # how often to save simulation state, in terms of environment steps
         self.collect_freq = collect_freq
@@ -95,10 +96,12 @@ class DataCollectionWrapper(Wrapper):
             state_path,
             states=np.array(self.states),
             action_infos=self.action_infos,
+            eef_states = np.array(self.eef_states),
             env=env_name,
         )
         self.states = []
         self.action_infos = []
+        self.eef_states = []
 
     def reset(self):
         ret = super().reset()
@@ -118,25 +121,41 @@ class DataCollectionWrapper(Wrapper):
             state = self.env.sim.get_state().flatten()
             self.states.append(state)
 
+            # collect eef state: [pos quat gripper]
+            eef_pos = self.env._right_hand_pos.tolist()
+            eef_quat = self.env._right_hand_quat.tolist()
+
+            if self.env.sim.data.get_joint_qpos('r_gripper_r_finger_joint')>self.env.sim.data.get_joint_qpos('r_gripper_l_finger_joint'):
+                eef_gripper = 1
+            else:
+                eef_gripper = 0
+
+            eef_state = []
+            eef_state.extend(eef_pos)
+            eef_state.extend(eef_quat)
+            eef_state.append(eef_gripper)
+            self.eef_states.append(eef_state)
+
             if isinstance(self.env, IKWrapper):
                 # add end effector actions in addition to the low-level joint actions
                 info = {}
                 info["joint_velocities"] = np.array(
-                    self.controller.commanded_joint_velocities
+                    self.controller.commanded_joint_velocities, dtype=np.float64
                 )
-                info["right_dpos"] = np.array(action[:3])
-                info["right_dquat"] = np.array(action[3:7])
+
+                info["right_dpos"] = np.array(action[:3], dtype=np.float64)
+                info["right_dquat"] = np.array(action[3:7], dtype=np.float64)
                 if self.env.mujoco_robot.name == "sawyer":
-                    info["gripper_actuation"] = np.array(action[7:])
+                    info["gripper_actuation"] = np.array(action[7:], dtype=np.float64)
                 elif self.env.mujoco_robot.name == "baxter":
-                    info["gripper_actuation"] = np.array(action[14:])
-                    info["left_dpos"] = np.array(action[7:10])  # add in second arm info
-                    info["left_dquat"] = np.array(action[10:14])
+                    info["gripper_actuation"] = np.array(action[14:], dtype=np.float64)
+                    info["left_dpos"] = np.array(action[7:10], dtype=np.float64)  # add in second arm info
+                    info["left_dquat"] = np.array(action[10:14], dtype=np.float64)
             else:
                 info = {}
-                info["joint_velocities"] = np.array(action[: self.env.mujoco_robot.dof])
+                info["joint_velocities"] = np.array(action[: self.env.mujoco_robot.dof], dtype=np.float64)
                 info["gripper_actuation"] = np.array(
-                    action[self.env.mujoco_robot.dof :]
+                    action[self.env.mujoco_robot.dof :], dtype=np.float64
                 )
             self.action_infos.append(info)
 

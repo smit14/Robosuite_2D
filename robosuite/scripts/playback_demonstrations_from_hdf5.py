@@ -18,7 +18,9 @@ import random
 import numpy as np
 
 import robosuite
+from robosuite.wrappers import IKWrapper
 from robosuite.utils.mjcf_utils import postprocess_model_xml
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -33,10 +35,23 @@ if __name__ == "__main__":
         "--use-actions", 
         action='store_true',
     )
+    parser.add_argument(
+        "--ds",
+        action='store_true',
+        default = False
+    )
+    parser.add_argument(
+        "--ik",
+        action='store_true',
+        default=False
+    )
     args = parser.parse_args()
 
     demo_path = args.folder
-    hdf5_path = os.path.join(demo_path, "demo.hdf5")
+    if args.ds:
+        hdf5_path = os.path.join(demo_path, "demo_ds.hdf5")
+    else:
+        hdf5_path = os.path.join(demo_path, "demo.hdf5")
     f = h5py.File(hdf5_path, "r")
     env_name = f["data"].attrs["env"]
 
@@ -50,10 +65,13 @@ if __name__ == "__main__":
         control_freq=100,
     )
 
+    if args.ik:
+        env = IKWrapper(env)
+
     # list of all demonstrations episodes
     demos = list(f["data"].keys())
 
-    while True:
+    if True:
         print("Playing back random episode... (press ESC to quit)")
 
         # # select an episode randomly
@@ -84,16 +102,25 @@ if __name__ == "__main__":
             jvels = f["data/{}/joint_velocities".format(ep)].value
             grip_acts = f["data/{}/gripper_actuations".format(ep)].value
             actions = np.concatenate([jvels, grip_acts], axis=1)
+
+            if args.ik:
+                dpos = f["data/{}/right_dpos".format(ep)].value
+                dquat = f["data/{}/right_dquat".format(ep)].value
+                grip_acts = f["data/{}/gripper_actuations".format(ep)].value
+                actions = np.concatenate([dpos, dquat, grip_acts], axis=1)
+
             num_actions = actions.shape[0]
+            print(num_actions)
 
             for j, action in enumerate(actions):
                 env.step(action)
                 env.render()
 
                 if j < num_actions - 1:
+
                     # ensure that the actions deterministically lead to the same recorded states
                     state_playback = env.sim.get_state().flatten()
-                    assert(np.all(np.equal(states[j + 1], state_playback)))
+                    # assert(np.all(np.equal(states[j + 1], state_playback)))
 
         else:
 
