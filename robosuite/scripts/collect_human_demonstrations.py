@@ -20,8 +20,6 @@ import robosuite.utils.transform_utils as T
 from robosuite.wrappers import IKWrapper
 from robosuite.wrappers import DataCollectionWrapper
 
-
-
 def collect_human_trajectory(env, device):
 	"""
 	Use the device (keyboard or SpaceNav 3D mouse) to collect a demonstration.
@@ -37,8 +35,8 @@ def collect_human_trajectory(env, device):
 
 	# rotate the gripper so we can see it easily
 	# init_join_position = [0, -1.18, 0.00, 2.18, 0.00, 0.57, 1.5708]
-	init_joint_position = [-0.59382754, -1.12190546,  0.48425191,  1.99674156, -0.2968217,   0.76457908,  1.82085369]
-	env.set_robot_joint_positions(init_joint_position)
+	# init_joint_position = [-0.59382754, -1.12190546,  0.48425191,  1.99674156, -0.2968217,   0.76457908,  1.82085369]
+	# env.set_robot_joint_positions(init_joint_position)
 
 	env.viewer.set_camera(camera_id=0)
 	env.render()
@@ -50,23 +48,17 @@ def collect_human_trajectory(env, device):
 	task_completion_hold_count = -1 # cournter to collect 10 timesteps after reaching goal
 	device.start_control()
 
-	# previous xpos
-	prev = None
-
 	while not reset:
+
 		state = device.get_controller_state()
 
-		# convert first dimension to zero so that it always moves in 2D
-		# state["dpos"][0] = 0
-
-		# ideal cube position : [0.56, 0.06170316, 0.82078722]
-		# if object goes out of the y axis and it is touched to plane then move that object to its original placerr
 		dpos, rotation, grasp, reset = (
 			state["dpos"],
 			state["rotation"],
 			state["grasp"],
 			state["reset"],
 		)
+
 
 		# convert into a suitable end effector action for the environment
 		current = env._right_hand_orn
