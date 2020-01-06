@@ -37,8 +37,8 @@ def collect_human_trajectory(env, device):
 
 	# rotate the gripper so we can see it easily
 	# init_join_position = [0, -1.18, 0.00, 2.18, 0.00, 0.57, 1.5708]
-	init_joint_position = [-0.59382754, -1.12190546,  0.48425191,  1.99674156, -0.2968217,   0.76457908,  1.82085369]
-	env.set_robot_joint_positions(init_joint_position)
+	# init_joint_position = [-0.59382754, -1.12190546,  0.48425191,  1.99674156, -0.2968217,   0.76457908,  1.82085369]
+	# env.set_robot_joint_positions(init_joint_position)
 
 	env.viewer.set_camera(camera_id=0)
 	env.render()
